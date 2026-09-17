@@ -1,0 +1,15 @@
+[project]
+name = "eon"
+version = "0.1.0"
+description = "EON: an artificial-life simulation exploring how complex behavior can emerge from simple rules."
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = []
+
+[tool.setuptools]
+packages = ["engine", "analysis", "storage"]
