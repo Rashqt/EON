@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EON | artificial-life simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500&family=Reenie+Beanie&display=swap" rel="stylesheet">
+<style>
+:root{--ice:#E6ECF4;--card:#F3F6FA;--au:#1E0B25;--au2:#4A2155;--mg:#FFB000;--lav:#7A5C95;--track:#D6DCE8}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--ice);background-image:radial-gradient(circle,rgba(30,11,37,.10) 1.5px,transparent 2px);background-size:36px 36px;color:var(--au);font-family:'Space Grotesk',system-ui,sans-serif;font-size:15px}
+.mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace}
+.app{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:14px;height:100vh;padding:16px 22px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{font-weight:700;font-size:34px;letter-spacing:-.02em;line-height:1}
+.logo span{background:var(--mg);padding:0 12px;border-radius:10px;display:inline-block}
+.tag{font-size:11px;letter-spacing:.14em;color:var(--au2)}
+.hand{font-family:'Reenie Beanie',cursive;font-size:40px;line-height:1;transform:rotate(-3deg);color:var(--au)}
+.hand sup{font-size:16px}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{font:500 12px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.08em;border:2px solid var(--au);background:transparent;border-radius:40px;padding:8px 15px;cursor:pointer;color:var(--au);white-space:nowrap}
+.btn:hover{background:var(--au);color:var(--ice)}
+.btn.pri{background:var(--mg)}
+.btn.pri:hover{background:var(--au);color:var(--mg)}
+.btn.on{background:var(--au);color:var(--mg)}
+.btn:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--mg);outline-offset:2px}
+.seg{display:flex;gap:6px;align-items:center}
+.pill{font:500 11px 'JetBrains Mono',monospace;letter-spacing:.1em;border:2px solid var(--au);border-radius:40px;padding:7px 13px;background:var(--card)}
+.pill b{display:inline-block;width:9px;height:9px;border-radius:50%;background:#9AA3B5;margin-right:8px}
+.pill.run b{background:var(--mg);box-shadow:0 0 0 2px var(--au)}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.stat{border:2px solid var(--au);border-radius:18px;padding:9px 16px;background:var(--card)}
+.stat .k{font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--au2)}
+.stat .v{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.stat .s{font:500 11px 'JetBrains Mono',monospace;color:var(--au2)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:16px;min-height:0}
+.card{border:2px solid var(--au);border-radius:22px;background:var(--card);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.bar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-bottom:2px solid var(--au)}
+.bar-row .sp{flex:1}
+.mapwrap{position:relative;flex:1;min-height:260px;background:var(--ice)}
+canvas#map{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+canvas#map.drag{cursor:grabbing}
+#tip{position:absolute;pointer-events:none;background:var(--au);color:var(--ice);font:500 11.5px 'JetBrains Mono',monospace;padding:7px 10px;border-radius:10px;display:none;line-height:1.5;z-index:3;white-space:nowrap}
+.legend{position:absolute;left:12px;bottom:12px;background:var(--card);border:2px solid var(--au);border-radius:12px;padding:6px 10px;font:500 10.5px 'JetBrains Mono',monospace;display:flex;gap:8px;align-items:center}
+.legend i{display:block;width:90px;height:9px;border-radius:5px;border:1.5px solid var(--au)}
+.tabs{display:flex;border-bottom:2px solid var(--au)}
+.tab{flex:1;font:500 11px 'JetBrains Mono',monospace;letter-spacing:.1em;padding:12px 4px;background:transparent;border:0;border-right:2px solid var(--au);cursor:pointer;color:var(--au)}
+.tab:last-child{border-right:0}
+.tab.on{background:var(--au);color:var(--mg)}
+.panel{display:none;padding:16px;overflow:auto;flex:1;min-height:0}
+.panel.on{display:block}
+h3{margin:0 0 4px;font-size:22px;letter-spacing:-.02em}
+.sub{font:500 11px 'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--au2);margin-bottom:12px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:12px 0}
+.kv div{border-bottom:1.5px dashed #B9C0CF;padding-bottom:5px}
+.kv .k{display:block;font:500 10px 'JetBrains Mono',monospace;letter-spacing:.12em;color:var(--au2)}
+.kv .v{font-size:19px;font-weight:700}
+.trait{display:grid;grid-template-columns:132px 1fr 44px;gap:8px;align-items:center;margin:5px 0;font:500 11px 'JetBrains Mono',monospace}
+.bar{height:11px;border-radius:7px;background:var(--track);border:1.5px solid var(--au);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--mg);border-right:1.5px solid var(--au)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.chip{font:500 11px 'JetBrains Mono',monospace;border:1.5px solid var(--au);border-radius:30px;padding:3px 10px;background:transparent;cursor:pointer;color:var(--au)}
+.chip:hover,.chip.on{background:var(--au);color:var(--mg)}
+.chip.dead{border-style:dashed;color:var(--au2)}
+.note{font-size:12.5px;color:var(--au2);line-height:1.45;margin:8px 0}
+.empty{border:2px dashed var(--au2);border-radius:18px;padding:20px;color:var(--au2);line-height:1.5}
+.empty b{color:var(--au)}
+.sect{font:500 11px 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--au2);margin:16px 0 6px}
+.row{display:grid;grid-template-columns:54px 1fr 56px 84px;gap:8px;align-items:center;padding:7px 8px;border-radius:12px;cursor:pointer;font:500 12px 'JetBrains Mono',monospace}
+.row:hover{background:var(--track)}
+.row.on{background:var(--au);color:var(--ice)}
+.row.on .bar{border-color:var(--ice)}
+.ev{padding:8px 0;border-bottom:1.5px dashed #B9C0CF;font-size:13.5px;line-height:1.4}
+.ev .t{font:500 10.5px 'JetBrains Mono',monospace;color:var(--au2);letter-spacing:.08em}
+.ev .c{display:inline-block;font:500 10px 'JetBrains Mono',monospace;border:1.5px solid var(--au);border-radius:20px;padding:0 8px;margin-left:6px}
+.ev .c.extinction{background:var(--au);color:var(--mg)}
+.ev .c.environment{background:var(--mg)}
+.chart{margin-bottom:16px}
+.chart canvas{width:100%;height:132px;display:block;border:2px solid var(--au);border-radius:14px;background:var(--ice)}
+.ct{display:flex;justify-content:space-between;align-items:baseline;font:500 11px 'JetBrains Mono',monospace;letter-spacing:.1em;margin-bottom:5px}
+.leg{display:flex;gap:12px;font:500 10.5px 'JetBrains Mono',monospace;margin-top:4px;flex-wrap:wrap}
+.leg i{display:inline-block;width:12px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+label{display:block;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.12em;color:var(--au2);margin:10px 0 4px}
+input,select{width:100%;font:500 14px 'JetBrains Mono',monospace;border:2px solid var(--au);border-radius:12px;background:var(--ice);padding:8px 12px;color:var(--au)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font:500 11px 'JetBrains Mono',monospace;color:var(--au2);letter-spacing:.06em}
+footer a{color:var(--au2)}
+.geo{display:grid;grid-template-columns:repeat(16,1fr);gap:2px}
+.geo i{aspect-ratio:1;border-radius:3px;background:var(--track);display:block}
+@media (max-width:1050px){.app{height:auto}.main{grid-template-columns:1fr}.mapwrap{height:60vh}.stats{grid-template-columns:repeat(3,1fr)}.card.side{min-height:520px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">
+    <div class="logo"><span>EON</span></div>
+    <div><div class="tag mono">ARTIFICIAL-LIFE SIMULATION</div><div class="tag mono">&Delta; OBSERVER MODE</div></div>
+  </div>
+  <div class="controls">
+    <button class="btn pri" id="play" title="Space">PLAY</button>
+    <button class="btn" id="step" title=".">STEP</button>
+    <div class="seg" id="speeds" role="group" aria-label="Speed in ticks per second">
+      <button class="btn" data-tps="5">5/s</button>
+      <button class="btn on" data-tps="20">20/s</button>
+      <button class="btn" data-tps="80">80/s</button>
+      <button class="btn" data-tps="0">MAX</button>
+    </div>
+    <div class="pill" id="status"><b></b><span>CONNECTING</span></div>
+  </div>
+  <div class="hand">RASHQT<sup>&reg;</sup></div>
+</header>
+
+<section class="stats" aria-label="Simulation numbers">
+  <div class="stat"><div class="k">AGE (TICKS)</div><div class="v" id="s-tick">0</div><div class="s" id="s-seed">seed -</div></div>
+  <div class="stat"><div class="k">POPULATION</div><div class="v" id="s-pop">0</div><div class="s" id="s-bd">births 0 / deaths 0</div></div>
+  <div class="stat"><div class="k">LIVING SPECIES</div><div class="v" id="s-sp">0</div><div class="s" id="s-spe">ever 0</div></div>
+  <div class="stat"><div class="k">EXTINCTIONS</div><div class="v" id="s-ex">0</div><div class="s">recorded events</div></div>
+  <div class="stat"><div class="k">SPEED</div><div class="v" id="s-tps">0</div><div class="s" id="s-tgt">ticks per second</div></div>
+  <div class="stat"><div class="k">WORLD</div><div class="v" id="s-size">-</div><div class="s">cells</div></div>
+</section>
+
+<div class="main">
+  <section class="card" aria-label="World map">
+    <div class="bar-row">
+      <div class="seg" id="layers" role="group" aria-label="Map layer">
+        <button class="btn on" data-layer="resource">FOOD</button>
+        <button class="btn" data-layer="temperature">TEMP</button>
+        <button class="btn" data-layer="moisture">MOISTURE</button>
+        <button class="btn" data-layer="elevation">ELEVATION</button>
+      </div>
+      <span class="sp"></span>
+      <button class="btn on" id="t-orgs">CREATURES</button>
+      <button class="btn" id="z-out" title="-">-</button>
+      <button class="btn" id="z-in" title="+">+</button>
+      <button class="btn" id="z-reset">FIT</button>
+    </div>
+    <div class="mapwrap" id="mapwrap">
+      <canvas id="map" aria-label="World map. Click a creature to inspect it."></canvas>
+      <div id="tip"></div>
+      <div class="legend" id="legend"><span id="lg-lo">low</span><i id="lg-bar"></i><span id="lg-hi">high</span></div>
+    </div>
+  </section>
+
+  <section class="card side" aria-label="Details">
+    <div class="tabs" role="tablist">
+      <button class="tab on" data-tab="inspect">INSPECT</button>
+      <button class="tab" data-tab="species">SPECIES</button>
+      <button class="tab" data-tab="charts">CHARTS</button>
+      <button class="tab" data-tab="events">EVENTS</button>
+      <button class="tab" data-tab="world">WORLD</button>
+    </div>
+    <div class="panel on" id="p-inspect"></div>
+    <div class="panel" id="p-species"></div>
+    <div class="panel" id="p-charts"></div>
+    <div class="panel" id="p-events"></div>
+    <div class="panel" id="p-world"></div>
+  </section>
+</div>
+
+<footer>
+  <span>&copy; 2025 Rashqt. Made with care in the late hours.</span>
+  <span>Space: play/pause &nbsp; . : step &nbsp; F: follow &nbsp; +/-: zoom &nbsp; <a href="/privacy">Privacy</a> &nbsp; <a href="/terms">Terms</a></span>
+</footer>
+</div>
+
+<script>
+(()=>{
+'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const C={ice:'#E6ECF4',au:'#1E0B25',au2:'#4A2155',mg:'#FFB000',lav:'#7A5C95'};
+const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+const mix=(a,b,t)=>{t=Math.max(0,Math.min(1,t));return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]};
+const RAMP={resource:[hex('#EEF1F6'),hex('#FFB000')],temperature:[hex('#B8C6E4'),hex('#FFB000')],moisture:[hex('#EEF1F6'),hex('#7A5C95')],elevation:[hex('#EEF1F6'),hex('#4A2155')]};
+const LEGEND={resource:['empty','full'],temperature:['cold','warm'],moisture:['dry','wet'],elevation:['low','high']};
+const WATER_DEEP=hex('#8E7BA6'),WATER_SHALLOW=hex('#C3B8D6');
+const fmt=n=>Number(n).toLocaleString('en-US');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const nice=s=>s.replace(/_/g,' ');
+const api=async(p,o)=>{const r=await fetch(p,o);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j};
+const post=b=>api('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+
+const S={world:null,wv:-1,frame:null,layer:'resource',showOrgs:true,sel:null,selOrg:null,selSpecies:null,follow:false,trail:[],followStart:null,
+  view:{zoom:1,ox:0,oy:0,fit:1},tab:'inspect',orgInfo:null,spInfo:null,lastInfoAt:0,hist:null,traitsOn:new Set(['energy_efficiency','speed','size','lifespan']),
+  spFilter:'living',cellCounts:new Map(),mouse:null,drag:null,busy:false};
+S.cv=$('#map');S.ctx=S.cv.getContext('2d');S.off=document.createElement('canvas');S.offCtx=S.off.getContext('2d');
+
+/* ---------------------------------------------------------- world + frame */
+async function loadWorld(){
+  const w=await api('/api/world');
+  S.world={w:w.w,h:w.h,wl:w.water_level,elev:w.elev,water:w.water,traits:w.traits,seed:w.seed};
+  S.wv=w.world_version;S.off.width=w.w;S.off.height=w.h;S.img=S.offCtx.createImageData(w.w,w.h);
+  S.sel=null;S.selOrg=null;S.selSpecies=null;S.follow=false;S.trail=[];S.orgInfo=null;S.spInfo=null;S.hist=null;
+  $('#s-size').textContent=w.w+' x '+w.h;
+  resize(true);renderInspect();refreshTab(true);
+}
+function paintTerrain(){
+  const W=S.world,f=S.frame;if(!W||!f)return;
+  const [a,b]=RAMP[S.layer],d=S.img.data,n=W.w*W.h;
+  for(let i=0;i<n;i++){
+    let c;
+    if(W.water[i]) c=mix(WATER_DEEP,WATER_SHALLOW,W.elev[i]/(W.wl*100));
+    else{let v=f.values[i]/100;if(S.layer==='resource')v=Math.pow(v,.55);if(S.layer==='elevation')v=(W.elev[i]/100-W.wl)/(1-W.wl);c=mix(a,b,v)}
+    const j=i*4;d[j]=c[0];d[j+1]=c[1];d[j+2]=c[2];d[j+3]=255;
+  }
+  S.offCtx.putImageData(S.img,0,0);
+}
+async function applyFrame(f){
+  if(f.status.world_version!==S.wv){await loadWorld()}
+  S.frame=f;
+  S.cellCounts=new Map();S.selOrg=null;
+  for(const o of f.orgs){const k=o[1]*S.world.w+o[2];S.cellCounts.set(k,(S.cellCounts.get(k)||0)+1);if(o[0]===S.sel)S.selOrg=o}
+  const st=f.stats,run=f.status.running;
+  $('#s-tick').textContent=fmt(f.tick);$('#s-seed').textContent='seed '+st.seed;
+  $('#s-pop').textContent=fmt(st.population);$('#s-bd').textContent='births '+fmt(st.total_births)+' / deaths '+fmt(st.total_deaths);
+  $('#s-sp').textContent=fmt(st.species);$('#s-spe').textContent='ever '+fmt(st.species_ever);$('#s-ex').textContent=fmt(st.extinctions);
+  $('#s-tps').textContent=run?String(f.status.achieved_tps):'0';
+  $('#s-tgt').textContent=f.status.target_tps===0?'target: max':'target '+f.status.target_tps+' / s';
+  $('#play').textContent=run?'PAUSE':'PLAY';$('#play').classList.toggle('pri',!run);$('#play').classList.toggle('on',run);
+  const pill=$('#status');pill.classList.toggle('run',run);
+  pill.lastElementChild.textContent=st.population===0&&f.tick>0?'EXTINCT':(run?'RUNNING':'PAUSED');
+  $$('#speeds .btn').forEach(b=>b.classList.toggle('on',Number(b.dataset.tps)===f.status.target_tps));
+  if(S.follow&&S.selOrg){
+    const last=S.trail[S.trail.length-1];
+    if(!last||last[0]!==S.selOrg[2]||last[1]!==S.selOrg[1]){S.trail.push([S.selOrg[2],S.selOrg[1]]);if(S.trail.length>400)S.trail.shift()}
+    const cs=S.view.fit*S.view.zoom;S.view.ox=S.cv.clientWidth/2-(S.selOrg[2]+.5)*cs;S.view.oy=S.cv.clientHeight/2-(S.selOrg[1]+.5)*cs;
+  }
+  paintTerrain();draw();updateLegend();
+  const now=Date.now();
+  if(S.sel!==null&&now-S.lastInfoAt>(run?500:1500)){S.lastInfoAt=now;loadOrg(S.sel,true)}
+  if(S.selSpecies!==null&&S.sel===null&&now-S.lastInfoAt>(run?900:2000)){S.lastInfoAt=now;loadSpecies(S.selSpecies,true)}
+}
+async function poll(){
+  try{const f=await api('/api/frame?layer='+S.layer);await applyFrame(f)}
+  catch(e){const p=$('#status');p.classList.remove('run');p.lastElementChild.textContent='DISCONNECTED'}
+  setTimeout(poll,S.frame&&S.frame.status.running?160:500);
+}
+function updateLegend(){
+  const [a,b]=RAMP[S.layer],css=c=>`rgb(${c.map(Math.round)})`;
+  $('#lg-bar').style.background=`linear-gradient(90deg,${css(a)},${css(b)})`;
+  $('#lg-lo').textContent=LEGEND[S.layer][0];$('#lg-hi').textContent=LEGEND[S.layer][1];
+}
+
+/* ------------------------------------------------------------------- map */
+function resize(reset){
+  const cv=S.cv,dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;
+  cv.width=Math.max(1,w*dpr);cv.height=Math.max(1,h*dpr);S.ctx.setTransform(dpr,0,0,dpr,0,0);
+  if(!S.world)return;
+  S.view.fit=Math.min((w-24)/S.world.w,(h-24)/S.world.h);
+  if(reset)fitView();
+  draw();
+}
+function fitView(){
+  const W=S.world;if(!W)return;const cs=S.view.fit;S.view.zoom=1;
+  S.view.ox=(S.cv.clientWidth-W.w*cs)/2;S.view.oy=(S.cv.clientHeight-W.h*cs)/2;
+}
+function zoomAt(f,mx,my){
+  const v=S.view,cs=v.fit*v.zoom,wx=(mx-v.ox)/cs,wy=(my-v.oy)/cs;
+  v.zoom=Math.max(.6,Math.min(24,v.zoom*f));const n=v.fit*v.zoom;v.ox=mx-wx*n;v.oy=my-wy*n;draw();
+}
+function draw(){
+  const ctx=S.ctx,cv=S.cv,cw=cv.clientWidth,ch=cv.clientHeight;ctx.clearRect(0,0,cw,ch);
+  const W=S.world,f=S.frame;if(!W||!f)return;
+  const v=S.view,cs=v.fit*v.zoom;
+  ctx.imageSmoothingEnabled=false;ctx.drawImage(S.off,v.ox,v.oy,W.w*cs,W.h*cs);
+  ctx.strokeStyle=C.au;ctx.lineWidth=2;ctx.strokeRect(v.ox,v.oy,W.w*cs,W.h*cs);
+  const orgs=f.orgs,r=Math.max(1.9,cs*.34);
+  if(S.showOrgs){
+    const set=(pred,fill,stroke,alpha,k=1)=>{const rr=r*k;
+      ctx.globalAlpha=alpha;ctx.fillStyle=fill;ctx.beginPath();
+      for(const o of orgs){if(!pred(o))continue;const x=v.ox+(o[2]+.5)*cs,y=v.oy+(o[1]+.5)*cs;
+        if(x<-8||y<-8||x>cw+8||y>ch+8)continue;ctx.moveTo(x+rr,y);ctx.arc(x,y,rr,0,6.2832)}
+      ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2.5;ctx.stroke()}ctx.globalAlpha=1};
+    const hl=S.selSpecies;
+    if(hl===null)set(()=>true,C.au,null,.9);
+    else{set(o=>o[3]!==hl,C.au,null,.3);set(o=>o[3]===hl,C.mg,C.au,1,1.4)}
+  }
+  if(S.trail.length>1){
+    ctx.strokeStyle=C.mg;ctx.lineWidth=3;ctx.lineJoin='round';ctx.beginPath();
+    S.trail.forEach((p,i)=>{const x=v.ox+(p[0]+.5)*cs,y=v.oy+(p[1]+.5)*cs;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
+  }
+  if(S.selOrg){
+    const x=v.ox+(S.selOrg[2]+.5)*cs,y=v.oy+(S.selOrg[1]+.5)*cs;
+    if(S.orgInfo&&!S.orgInfo.pruned&&S.orgInfo.id===S.sel){
+      ctx.setLineDash([6,6]);ctx.strokeStyle=C.au2;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,S.orgInfo.vision_radius*cs,0,6.2832);ctx.stroke();ctx.setLineDash([]);
+    }
+    ctx.fillStyle=C.mg;ctx.strokeStyle=C.au;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,r+3,0,6.2832);ctx.fill();ctx.stroke();
+    ctx.fillStyle=C.au;ctx.beginPath();ctx.arc(x,y,Math.max(1.5,r*.6),0,6.2832);ctx.fill();
+  }
+}
+function pickOrg(mx,my){
+  const f=S.frame,W=S.world;if(!f)return null;const v=S.view,cs=v.fit*v.zoom;let best=null,bd=Math.max(12,cs*.6)**2;
+  for(const o of f.orgs){const x=v.ox+(o[2]+.5)*cs-mx,y=v.oy+(o[1]+.5)*cs-my,d=x*x+y*y;if(d<bd){bd=d;best=o}}
+  return best;
+}
+function tipFor(mx,my){
+  const W=S.world,f=S.frame;if(!W||!f)return null;const v=S.view,cs=v.fit*v.zoom;
+  const cx=Math.floor((mx-v.ox)/cs),cy=Math.floor((my-v.oy)/cs);if(cx<0||cy<0||cx>=W.w||cy>=W.h)return null;
+  const i=cy*W.w+cx,water=W.water[i],n=S.cellCounts.get(i)||0;
+  return `cell ${cx}, ${cy}<br>${water?'water':'land'} &nbsp; elevation ${(W.elev[i]/100).toFixed(2)}<br>${S.layer} ${f.values[i]}%<br>creatures here: ${n}`;
+}
+const cv=S.cv;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);S.drag={x:e.clientX,y:e.clientY,ox:S.view.ox,oy:S.view.oy,moved:false}});
+cv.addEventListener('pointermove',e=>{
+  const rc=cv.getBoundingClientRect(),mx=e.clientX-rc.left,my=e.clientY-rc.top;
+  if(S.drag){
+    const dx=e.clientX-S.drag.x,dy=e.clientY-S.drag.y;
+    if(Math.abs(dx)+Math.abs(dy)>4){S.drag.moved=true;cv.classList.add('drag');if(S.follow){S.follow=false;syncFollow()}}
+    if(S.drag.moved){S.view.ox=S.drag.ox+dx;S.view.oy=S.drag.oy+dy;draw()}
+  }
+  const t=$('#tip'),h=tipFor(mx,my);
+  if(h&&!S.drag?.moved){t.innerHTML=h;t.style.display='block';t.style.left=Math.min(mx+14,rc.width-190)+'px';t.style.top=Math.max(4,my-10)+'px'}else t.style.display='none';
+});
+cv.addEventListener('pointerleave',()=>{$('#tip').style.display='none'});
+cv.addEventListener('pointerup',e=>{
+  const rc=cv.getBoundingClientRect(),d=S.drag;S.drag=null;cv.classList.remove('drag');
+  if(d&&!d.moved){const o=pickOrg(e.clientX-rc.left,e.clientY-rc.top);if(o)selectOrg(o[0]);else{clearSel()}}
+});
+cv.addEventListener('wheel',e=>{e.preventDefault();const rc=cv.getBoundingClientRect();zoomAt(e.deltaY<0?1.18:1/1.18,e.clientX-rc.left,e.clientY-rc.top)},{passive:false});
+$('#z-in').onclick=()=>zoomAt(1.4,cv.clientWidth/2,cv.clientHeight/2);
+$('#z-out').onclick=()=>zoomAt(1/1.4,cv.clientWidth/2,cv.clientHeight/2);
+$('#z-reset').onclick=()=>{S.follow=false;syncFollow();fitView();draw()};
+$('#t-orgs').onclick=function(){S.showOrgs=!S.showOrgs;this.classList.toggle('on',S.showOrgs);draw()};
+$$('#layers .btn').forEach(b=>b.onclick=()=>{S.layer=b.dataset.layer;$$('#layers .btn').forEach(x=>x.classList.toggle('on',x===b));poll1()});
+async function poll1(){try{await applyFrame(await api('/api/frame?layer='+S.layer))}catch(e){}}
+window.addEventListener('resize',()=>resize(false));
+
+/* --------------------------------------------------------------- controls */
+$('#play').onclick=async()=>{await post({action:S.frame&&S.frame.status.running?'pause':'play'});poll1()};
+$('#step').onclick=async()=>{await post({action:'step'});poll1()};
+$$('#speeds .btn').forEach(b=>b.onclick=async()=>{await post({action:'speed',tps:Number(b.dataset.tps)});poll1()});
+window.addEventListener('keydown',e=>{
+  if(/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  if(e.code==='Space'){e.preventDefault();$('#play').click()}
+  else if(e.key==='.')$('#step').click();
+  else if(e.key==='f'||e.key==='F')toggleFollow();
+  else if(e.key==='+'||e.key==='=')$('#z-in').click();
+  else if(e.key==='-')$('#z-out').click();
+});
+
+/* ----------------------------------------------------------------- select */
+function selectOrg(id){S.sel=id;S.selSpecies=null;S.trail=[];S.followStart=null;S.orgInfo=null;S.follow=false;setTab('inspect');loadOrg(id,false)}
+function clearSel(){S.sel=null;S.selOrg=null;S.follow=false;S.trail=[];S.orgInfo=null;S.spInfo=null;S.selSpecies=null;renderInspect();draw()}
+function selectSpecies(id){S.selSpecies=id;S.sel=null;S.selOrg=null;S.follow=false;S.trail=[];S.orgInfo=null;setTab('inspect');loadSpecies(id,false)}
+async function loadOrg(id,quiet){
+  try{const o=await api('/api/organism/'+id);if(S.sel!==id)return;S.orgInfo=o;if(!S.followStart&&S.follow&&!o.pruned)S.followStart={tick:S.frame.tick,energy:o.energy,x:o.x,y:o.y};renderInspect();draw()}
+  catch(e){if(!quiet){S.orgInfo={error:e.message};renderInspect()}}
+}
+async function loadSpecies(id,quiet){
+  try{const s=await api('/api/species/'+id);if(S.selSpecies!==id||S.sel!==null)return;S.spInfo=s;renderInspect();draw()}
+  catch(e){if(!quiet){S.spInfo={error:e.message};renderInspect()}}
+}
+function toggleFollow(){
+  if(S.sel===null||!S.selOrg)return;
+  S.follow=!S.follow;S.trail=[];S.followStart=null;
+  if(S.follow){if(S.view.zoom<4){const cs0=S.view.fit*S.view.zoom;S.view.zoom=4}S.followStart=S.orgInfo&&!S.orgInfo.pruned?{tick:S.frame.tick,energy:S.orgInfo.energy,x:S.orgInfo.x,y:S.orgInfo.y}:null}
+  syncFollow();renderInspect();draw();
+}
+function syncFollow(){const b=$('#b-follow');if(b)b.classList.toggle('on',S.follow)}
+
+/* --------------------------------------------------------------- renderers */
+function traitBars(g){
+  return Object.keys(g).map(k=>`<div class="trait"><span>${esc(nice(k))}</span><div class="bar"><i style="width:${Math.round(g[k]*100)}%"></i></div><span>${g[k].toFixed(2)}</span></div>`).join('');
+}
+function idChip(id,kind){return `<button class="chip" data-${kind}="${id}">#${id}</button>`}
+function renderInspect(){
+  const p=$('#p-inspect');
+  if(S.sel!==null){
+    const o=S.orgInfo;
+    if(!o){p.innerHTML='<div class="empty">Loading specimen...</div>';return}
+    if(o.error){p.innerHTML=`<div class="empty">${esc(o.error)}</div>`;return}
+    if(o.pruned){
+      p.innerHTML=`<h3>SPECIMEN #${o.id}</h3><div class="sub">DETAILED STATE PRUNED</div>
+      <div class="note">This creature died long ago, so its traits were discarded to save memory. Its place in the family tree is still recorded.</div>
+      <div class="kv"><div><span class="k">SPECIES</span><span class="v">${o.species_id??'-'}</span></div><div><span class="k">GENERATION</span><span class="v">${o.generation}</span></div>
+      <div><span class="k">BORN</span><span class="v">tick ${fmt(o.birth_tick)}</span></div><div><span class="k">PARENT</span><span class="v">${o.parent_id??'none'}</span></div></div>
+      <div class="sect">ANCESTORS (${o.ancestor_depth})</div><div class="chips">${o.ancestors.map(a=>idChip(a,'org')).join('')||'founder'}</div>`;bindChips(p);return}
+    const c=o.calculated,status=o.alive?'alive':`dead (${esc(nice(o.death_cause||'unknown'))}) at tick ${fmt(o.death_tick)}`;
+    let obs='';
+    if(S.follow&&S.followStart&&S.trail.length>1){
+      let path=0;for(let i=1;i<S.trail.length;i++){path+=Math.hypot(S.trail[i][0]-S.trail[i-1][0],S.trail[i][1]-S.trail[i-1][1])}
+      const net=Math.hypot(o.x-S.followStart.x,o.y-S.followStart.y);
+      obs=`<div class="sect">OBSERVED WHILE FOLLOWING</div><div class="kv">
+      <div><span class="k">NET DISPLACEMENT</span><span class="v">${net.toFixed(1)} cells</span></div>
+      <div><span class="k">PATH (SAMPLED)</span><span class="v">${path.toFixed(1)} cells</span></div>
+      <div><span class="k">ENERGY</span><span class="v">${S.followStart.energy} to ${o.energy}</span></div>
+      <div><span class="k">TICKS FOLLOWED</span><span class="v">${fmt(S.frame.tick-S.followStart.tick)}</span></div></div>
+      <div class="note">Sampled from screen updates, so fast speeds skip ticks and the path is shorter than the true path.</div>`;
+    }
+    p.innerHTML=`<h3>SPECIMEN #${o.id}</h3><div class="sub">${esc(status).toUpperCase()}</div>
+    <div class="chips"><button class="btn ${S.follow?'on':''}" id="b-follow" ${o.alive?'':'disabled'}>FOLLOW</button>
+    <button class="btn" id="b-sp">HIGHLIGHT SPECIES ${o.species_id}</button><button class="btn" id="b-clear">CLEAR</button></div>
+    <div class="kv">
+      <div><span class="k">SPECIES</span><span class="v">${o.species_id}</span></div><div><span class="k">GENERATION</span><span class="v">${o.generation}</span></div>
+      <div><span class="k">AGE</span><span class="v">${fmt(o.age)} / ${fmt(o.max_lifespan)}</span></div><div><span class="k">ENERGY</span><span class="v">${o.energy} / 100</span></div>
+      <div><span class="k">BORN</span><span class="v">tick ${fmt(o.birth_tick)}</span></div><div><span class="k">CHILDREN</span><span class="v">${o.children_count}</span></div>
+      <div><span class="k">PARENT</span><span class="v">${o.parent_id??'none'}</span></div><div><span class="k">DESCENDANTS</span><span class="v">${fmt(o.descendants_count)}</span></div></div>
+    <div class="sect">TRAITS</div>${traitBars(o.genome)}
+    <div class="sect">CALCULATED RIGHT NOW</div><div class="kv">
+      <div><span class="k">FOOD IN ITS CELL</span><span class="v">${c.cell_resource_pct}%</span></div>
+      <div><span class="k">VISION RADIUS</span><span class="v">${o.vision_radius} cells</span></div>
+      <div><span class="k">CELL TEMP / PREFERRED</span><span class="v">${c.cell_temperature} / ${c.preferred_temperature}</span></div>
+      <div><span class="k">TEMP GAP</span><span class="v">${c.temperature_gap}</span></div></div>
+    ${obs}
+    <div class="sect">ANCESTORS (${o.ancestor_depth} back to founder)</div><div class="chips">${o.ancestors.map(a=>idChip(a,'org')).join('')||'founder'}</div>`;
+    $('#b-follow',p).onclick=toggleFollow;$('#b-sp',p).onclick=()=>selectSpecies(o.species_id);$('#b-clear',p).onclick=clearSel;bindChips(p);return;
+  }
+  if(S.selSpecies!==null){
+    const s=S.spInfo;
+    if(!s){p.innerHTML='<div class="empty">Loading species...</div>';return}
+    if(s.error){p.innerHTML=`<div class="empty">${esc(s.error)}</div>`;return}
+    const ch=s.recent_change?`${s.recent_change.from_population} to ${s.recent_change.now} since tick ${fmt(s.recent_change.from_tick)}`:'not enough history';
+    const mx=Math.max(1,...s.geo.flat());
+    p.innerHTML=`<h3>SPECIES ${s.id}</h3><div class="sub">${s.extinct?'EXTINCT AT TICK '+fmt(s.extinction_tick):'LIVING'}</div>
+    <div class="chips"><button class="btn" id="b-clear">CLEAR</button></div>
+    <div class="kv"><div><span class="k">POPULATION</span><span class="v">${fmt(s.population)}</span></div><div><span class="k">PEAK</span><span class="v">${fmt(s.peak)}</span></div>
+    <div><span class="k">FOUNDED</span><span class="v">tick ${fmt(s.created)}</span></div><div><span class="k">FOUNDER</span><span class="v">#${s.founder_organism_id}</span></div>
+    <div><span class="k">PARENT SPECIES</span><span class="v">${s.parent??'none'}</span></div><div><span class="k">SPLIT-OFF SPECIES</span><span class="v">${s.children_total}</span></div></div>
+    <div class="sect">POPULATION HISTORY</div><canvas id="sp-chart" style="width:100%;height:110px;border:2px solid var(--au);border-radius:14px;background:var(--ice)"></canvas>
+    <div class="note">Recent change: ${esc(ch)}</div>
+    <div class="sect">AVERAGE TRAITS</div>${traitBars(s.avg_traits)}
+    <div class="sect">WHERE THEY LIVE (16 x 10 regions)</div><div class="geo">${s.geo.flat().map(n=>`<i style="${n?`background:rgba(255,176,0,${.25+.75*n/mx});box-shadow:inset 0 0 0 1.5px var(--au)`:''}" title="${n}"></i>`).join('')}</div>
+    <div class="sect">LINEAGE</div><div class="note">Ancestor species, nearest first:</div><div class="chips">${s.lineage.map(a=>`<button class="chip" data-sp="${a}">${a}</button>`).join('')||'none (original founder lineage)'}</div>
+    <div class="note">Species that split from this one:</div><div class="chips">${s.children.map(a=>`<button class="chip" data-sp="${a}">${a}</button>`).join('')||'none'}</div>`;
+    $('#b-clear',p).onclick=clearSel;bindChips(p);
+    lineChart($('#sp-chart',p),s.history.map(h=>h[0]),[{data:s.history.map(h=>h[1]),color:C.au,fill:true}],{min:0});
+    return;
+  }
+  p.innerHTML=`<div class="empty"><b>Nothing selected.</b><br>Click a creature on the map to inspect it, or open the SPECIES tab and pick a species to highlight it.<br><br>
+  Everything shown here is read straight from the running simulation. If a number cannot be measured, it is not shown.</div>`;
+}
+function bindChips(root){
+  $$('[data-org]',root).forEach(b=>b.onclick=()=>selectOrg(Number(b.dataset.org)));
+  $$('[data-sp]',root).forEach(b=>b.onclick=()=>selectSpecies(Number(b.dataset.sp)));
+}
+
+/* ------------------------------------------------------------------ charts */
+const PAL=[C.au,C.mg,C.lav,'#6B7FA6','#B87800','#9A86B0','#2F6F73','#A04A5A','#555B6E'];
+function lineChart(cv,xs,series,o={}){
+  const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;cv.width=w*dpr;cv.height=h*dpr;
+  const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  const L=46,R=10,T=10,B=20;g.font='11px JetBrains Mono, monospace';
+  if(xs.length<2){g.fillStyle=C.au2;g.fillText('Run the simulation to collect data',L,h/2);return}
+  let lo=o.min??Infinity,hi=o.max??-Infinity;
+  for(const s of series)for(const v of s.data){if(v==null)continue;if(o.min==null&&v<lo)lo=v;if(o.max==null&&v>hi)hi=v}
+  if(!isFinite(lo)||!isFinite(hi)){g.fillStyle=C.au2;g.fillText('No data yet',L,h/2);return}
+  if(hi===lo)hi=lo+1;if(o.min==null)lo-=(hi-lo)*.06;if(o.max==null)hi+=(hi-lo)*.06;
+  const x0=xs[0],x1=xs[xs.length-1],X=x=>L+(x-x0)/((x1-x0)||1)*(w-L-R),Y=v=>T+(1-(v-lo)/(hi-lo))*(h-T-B);
+  g.strokeStyle='rgba(30,11,37,.14)';g.fillStyle=C.au2;g.lineWidth=1;
+  for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,y=Y(v);g.beginPath();g.moveTo(L,y);g.lineTo(w-R,y);g.stroke();
+    g.fillText((hi-lo>=6?Math.round(v):v.toFixed(2)).toString(),4,y+4)}
+  g.fillText(fmt(x0),L,h-5);const t1=fmt(x1);g.fillText(t1,w-R-g.measureText(t1).width,h-5);
+  for(const s of series){
+    g.beginPath();let started=false,lx=0;
+    xs.forEach((x,i)=>{const v=s.data[i];if(v==null)return;const px=X(x),py=Y(v);started?g.lineTo(px,py):g.moveTo(px,py);started=true;lx=px});
+    g.strokeStyle=s.color;g.lineWidth=2.5;g.lineJoin='round';g.setLineDash(s.dash||[]);g.stroke();g.setLineDash([]);
+    if(s.fill&&started){g.lineTo(lx,Y(lo));g.lineTo(X(x0),Y(lo));g.closePath();g.globalAlpha=.18;g.fillStyle=C.mg;g.fill();g.globalAlpha=1}
+  }
+}
+function legend(items){return `<div class="leg">${items.map(i=>`<span><i style="background:${i[1]}"></i>${esc(i[0])}</span>`).join('')}</div>`}
+function renderCharts(){
+  const p=$('#p-charts'),H=S.hist;
+  if(!p.dataset.built){
+    p.innerHTML=`<div class="chart"><div class="ct"><span>POPULATION</span></div><canvas id="c-pop"></canvas></div>
+    <div class="chart"><div class="ct"><span>SPECIES AND EXTINCTIONS</span></div><canvas id="c-sp"></canvas><div id="l-sp"></div></div>
+    <div class="chart"><div class="ct"><span>AVERAGE TRAITS</span></div><div class="chips" id="trait-chips"></div><canvas id="c-tr"></canvas><div id="l-tr"></div></div>
+    <div class="chart"><div class="ct"><span>BIRTHS AND DEATHS (CUMULATIVE)</span></div><canvas id="c-bd"></canvas><div id="l-bd"></div></div>
+    <div class="chart"><div class="ct"><span>ENVIRONMENT (LAND AVERAGE, 0 TO 1)</span></div><canvas id="c-env"></canvas><div id="l-env"></div></div>`;
+    p.dataset.built='1';
+    $('#trait-chips').innerHTML=(S.world?S.world.traits:[]).map((t,i)=>`<button class="chip ${S.traitsOn.has(t)?'on':''}" data-t="${t}">${esc(nice(t))}</button>`).join('');
+    $$('#trait-chips .chip').forEach(b=>b.onclick=()=>{const t=b.dataset.t;S.traitsOn.has(t)?S.traitsOn.delete(t):S.traitsOn.add(t);b.classList.toggle('on');renderCharts()});
+  }
+  if(!H||!H.tick||!H.tick.length){lineChart($('#c-pop'),[],[]);return}
+  lineChart($('#c-pop'),H.tick,[{data:H.population,color:C.au,fill:true}],{min:0});
+  lineChart($('#c-sp'),H.tick,[{data:H.species_count,color:C.au},{data:H.extinctions,color:C.mg,dash:[6,4]}],{min:0});
+  $('#l-sp').innerHTML=legend([['living species',C.au],['extinctions (total)',C.mg]]);
+  const tn=(S.world?S.world.traits:[]).filter(t=>S.traitsOn.has(t));
+  lineChart($('#c-tr'),H.tick,tn.map(t=>({data:H.traits[t],color:PAL[S.world.traits.indexOf(t)%PAL.length]})),{min:0,max:1});
+  $('#l-tr').innerHTML=legend(tn.map(t=>[nice(t),PAL[S.world.traits.indexOf(t)%PAL.length]]));
+  lineChart($('#c-bd'),H.tick,[{data:H.births_total,color:C.au},{data:H.deaths_total,color:C.mg,dash:[6,4]}],{min:0});
+  $('#l-bd').innerHTML=legend([['births',C.au],['deaths',C.mg]]);
+  const mxr=Math.max(...H.avg_resource.filter(v=>v!=null),0.0001);
+  lineChart($('#c-env'),H.tick,[{data:H.avg_temperature,color:C.mg},{data:H.avg_resource.map(v=>v==null?null:v/Math.max(mxr,1)),color:C.au}],{min:0,max:1});
+  $('#l-env').innerHTML=legend([['temperature',C.mg],['food (scaled)',C.au]]);
+}
+
+/* ----------------------------------------------------------- species + events */
+async function renderSpecies(){
+  const p=$('#p-species');let d;try{d=await api('/api/species')}catch(e){return}
+  const list=S.spFilter==='living'?d.living:d.extinct,mx=Math.max(1,...d.living.map(r=>r.population));
+  p.innerHTML=`<div class="chips"><button class="chip ${S.spFilter==='living'?'on':''}" data-f="living">LIVING (${fmt(d.living_total)})</button>
+  <button class="chip ${S.spFilter==='extinct'?'on':''}" data-f="extinct">EXTINCT (${fmt(d.extinct_total)})</button></div>
+  <div class="note">${S.spFilter==='living'?'Sorted by population. Click one to inspect and highlight it on the map.':'Most recent extinctions first. A species is extinct when its last member dies.'}</div>
+  ${list.map(r=>`<div class="row ${S.selSpecies===r.id?'on':''}" data-id="${r.id}"><span>SP ${r.id}</span>
+  <div class="bar"><i style="width:${r.extinct?Math.round(r.peak/mx*100):Math.round(r.population/mx*100)}%"></i></div>
+  <span>${r.extinct?'peak '+fmt(r.peak):fmt(r.population)}</span><span>${r.extinct?'died '+fmt(r.extinction_tick):'born '+fmt(r.created)}</span></div>`).join('')||'<div class="empty">None yet.</div>'}`;
+  $$('[data-f]',p).forEach(b=>b.onclick=()=>{S.spFilter=b.dataset.f;renderSpecies()});
+  $$('.row',p).forEach(r=>r.onclick=()=>selectSpecies(Number(r.dataset.id)));
+}
+async function renderEvents(){
+  const p=$('#p-events');let ev;try{ev=await api('/api/events?n=120')}catch(e){return}
+  p.innerHTML=ev.map(e=>`<div class="ev"><span class="t">TICK ${fmt(e.tick)}</span><span class="c ${e.category}">${esc(e.category)}</span><div>${esc(e.text)}</div></div>`).join('')||'<div class="empty">No events yet. Press PLAY.</div>';
+}
+async function renderWorld(force){
+  const p=$('#p-world');if(p.dataset.busy&&!force)return;
+  let saves=[];try{saves=await api('/api/saves')}catch(e){}
+  const cfg=S.frame?S.frame.status.config:{seed:42,width:80,height:50,population:250};
+  const keep={};$$('#p-world input').forEach(i=>keep[i.id]=i.value);
+  p.innerHTML=`<h3>NEW WORLD</h3><div class="sub">SAME SEED + SAME SETTINGS = SAME STARTING WORLD</div>
+  <div class="two"><div><label for="w-seed">SEED</label><input id="w-seed" type="number" value="${keep['w-seed']??cfg.seed}"></div>
+  <div><label for="w-pop">START POPULATION</label><input id="w-pop" type="number" min="0" max="3000" value="${keep['w-pop']??cfg.population}"></div>
+  <div><label for="w-w">WIDTH</label><input id="w-w" type="number" min="20" max="200" value="${keep['w-w']??cfg.width}"></div>
+  <div><label for="w-h">HEIGHT</label><input id="w-h" type="number" min="15" max="150" value="${keep['w-h']??cfg.height}"></div></div>
+  <div class="chips" style="margin-top:14px"><button class="btn pri" id="w-new">CREATE WORLD</button><button class="btn" id="w-rand">RANDOM SEED</button></div>
+  <div class="note">Bigger worlds and populations run slower. Speeds are target ticks per second. The real speed is shown in the top bar.</div>
+  <div class="sect">SAVE THIS WORLD</div>
+  <div class="two"><input id="w-name" placeholder="name" value="${keep['w-name']??'my_world'}"><button class="btn" id="w-save">SAVE</button></div>
+  <div class="note" id="w-msg"></div>
+  <div class="sect">LOAD A SAVE</div>
+  ${saves.map(s=>`<div class="row" style="grid-template-columns:1fr 80px 70px" data-name="${esc(s.name)}"><span>${esc(s.name)}</span><span>${(s.bytes/1048576).toFixed(1)} MB</span><button class="btn" style="padding:4px 10px">LOAD</button></div>`).join('')||'<div class="note">No saves yet.</div>'}`;
+  const msg=t=>{$('#w-msg').textContent=t};
+  $('#w-new').onclick=async()=>{try{await post({action:'new',seed:$('#w-seed').value||0,width:$('#w-w').value,height:$('#w-h').value,population:$('#w-pop').value});await poll1();setTab('inspect')}catch(e){msg(e.message)}};
+  $('#w-rand').onclick=()=>{$('#w-seed').value=Math.floor(Math.random()*1e6)};
+  $('#w-save').onclick=async()=>{try{await post({action:'save',name:$('#w-name').value});msg('Saved.');renderWorld(true)}catch(e){msg(e.message)}};
+  $$('[data-name]',p).forEach(r=>r.querySelector('button').onclick=async()=>{try{await post({action:'load',name:r.dataset.name});await poll1();setTab('inspect')}catch(e){msg(e.message)}});
+}
+
+/* ------------------------------------------------------------------- tabs */
+function setTab(t){
+  S.tab=t;$$('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));$$('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+t));
+  if(t==='inspect')renderInspect();refreshTab(true);
+}
+$$('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+async function refreshTab(force){
+  if(S.busy)return;S.busy=true;
+  try{
+    if(S.tab==='species'&&(force||S.frame&&S.frame.status.running))await renderSpecies();
+    else if(S.tab==='events')await renderEvents();
+    else if(S.tab==='charts'){S.hist=await api('/api/history');renderCharts()}
+    else if(S.tab==='world'&&force)await renderWorld(true);
+  }catch(e){}
+  S.busy=false;
+}
+setInterval(()=>refreshTab(false),1500);
+
+renderInspect();
+(async()=>{try{await loadWorld()}catch(e){}resize(true);poll()})();
+})();
+</script>
+</body>
+</html>
