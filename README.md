@@ -85,6 +85,7 @@ hardcoded.
 - Deterministic worlds from a given random seed: the same seed and
   settings reproduce the same initial world and the same organism
   genomes.
+- A live local web interface (`serve.py`): world map, creature and species inspectors, follow mode, charts, event log, save/load, in a light ice silver, aubergine and marigold design.
 - A CLI (`cli.py`) to run, resume, inspect an organism, and list species.
 - Chart export: population-over-time, species-count-over-time, and
   average-trait-over-time, drawn from the actual recorded history, plus
@@ -93,7 +94,7 @@ hardcoded.
   per species (`analysis/behavior.py`), computed from real organism
   positions each time it's called. This is the only "emergent behavior"
   metric implemented; see Limitations for what is not.
-- 50 automated tests (`tests/`) covering world creation, organism
+- 73 automated tests (`tests/`) covering world creation, organism
   creation, movement, energy, reproduction, mutation, death, species
   tracking, population calculations, extinction detection, environmental
   changes, save/load, deterministic seeds, and invalid/edge states.
@@ -119,8 +120,11 @@ eon/
   analysis/       reads simulation state/history and produces summaries
                   and chart-ready series; performs no simulation itself
   storage/        JSON save/load of full simulation state
-  tests/          unittest-based test suite (50 tests)
+  tests/          unittest-based test suite (73 tests)
   docs/           PRIVACY.md, TERMS.md
+  api/            local JSON server that runs the simulation for the web UI
+  visualization/  the browser interface (visualization/web/index.html)
+  serve.py        starts the web interface
   cli.py          command-line entry point
 ```
 
@@ -132,11 +136,7 @@ already produced.
 
 - Python 3.10+, NumPy for the world grid and vectorized environment
   math, Matplotlib for chart/world-map export.
-- No web framework, database, or API in this version: EON is a local,
-  offline batch/CLI tool. A live interactive graphical Observer Mode
-  (the Play/Pause/Follow/Inspect UI described in the original design
-  brief) is a natural next step but is not implemented here, see
-  Limitations.
+- Standard-library Python HTTP server plus a single-file HTML/CSS/JS interface (no frameworks, no build step, no extra installs).
 - Plain JSON for save files rather than SQLite: simulation state at MVP
   scale (thousands of organisms) serializes to a few megabytes and JSON
   keeps the format easy to inspect; SQLite would be a reasonable next
@@ -156,6 +156,37 @@ packages; `pyproject.toml` lists them if you prefer
 `pip install -e .`.)
 
 ## Running EON
+
+### The web interface (recommended)
+
+```bash
+cd eon
+python3 serve.py
+```
+
+This starts a local server at http://127.0.0.1:8765/ and opens it in your
+browser. It only listens on your own computer. You get a live world map
+(pan, zoom, food/temperature/moisture/elevation layers), Play / Pause /
+Step, speed control, clickable creatures with a full inspector, follow
+mode with a movement trail, a species browser with population history
+and a where-they-live map, charts, a real event log, and New / Save /
+Load world controls. Every number on screen is read from the running
+simulation.
+
+Options: `python3 serve.py --port 9000 --seed 7 --width 100 --height 60 --population 300 --no-browser`
+
+Speeds are target ticks per second, not multipliers. The achieved speed
+is shown in the top bar. Pure Python is the limit: expect roughly
+15 to 60 ticks per second at a few hundred creatures. To keep it
+responsive, the server discards the full state of creatures that died
+long ago (their place in the family tree is kept).
+
+Web fonts load from Google Fonts when the page opens. Offline, the page
+still works with fallback fonts.
+
+Keyboard: Space play/pause, `.` step, `F` follow, `+` / `-` zoom.
+
+### The command line
 
 Create and run a new world for 2000 ticks, printing a report and periodic
 progress:
@@ -238,12 +269,13 @@ environment. Save your seed if you want to revisit a specific world.
 
 Being direct about what this version does not do:
 
-- No live interactive graphical Observer Mode. Play/Pause/Step/Speed/
-  Follow/Inspect/Reset exist conceptually in the design but the actual
-  interface here is the CLI plus static chart/image export. Building a
-  live UI (web or desktop) on top of the existing engine is a
-  reasonable next step; the engine was kept UI-independent for exactly
-  that reason.
+- The web interface is local and single-user. Speed control is a target
+  in ticks per second, not a 1x/10x/100x multiplier, because pure Python
+  cannot reach thousands of ticks per second. There is no zoomed-out
+  mode for very large worlds, and the family tree is a chain of ancestors
+  and counts, not a drawn graph yet.
+- Creatures have no separate health stat. Survival is decided by energy
+  and age only, so the UI does not show health.
 - No predation, flocking, territoriality, communication, or any other
   organism-to-organism interaction. Movement only reacts to the
   environment (resource, temperature), not to other organisms. The
@@ -282,7 +314,7 @@ cd eon
 python3 -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-50 tests, all passing at the time of writing. `pytest` was not available
+73 tests, all passing at the time of writing. `pytest` was not available
 in the environment this was built in (no network access to install it),
 so the suite uses Python's built-in `unittest`; it will also run under
 `pytest tests/` if you have it installed, since `unittest.TestCase`
